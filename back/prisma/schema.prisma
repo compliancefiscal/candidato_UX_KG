@@ -23,7 +23,7 @@ model Employee {
   phone         String?
   salary        Decimal @db.Decimal(10, 2)
   contractDate  DateTime @map("contract_date")
-  function      String
+  role          String
 
   @@map("employees")
 }
