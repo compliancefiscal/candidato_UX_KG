@@ -9,7 +9,6 @@ const router = useRouter()
 const employeeStore = useEmployeeStore()
 const toast = useToast()
 
-// Change page title
 onMounted(() => {
   document.title = 'Adicionar Funcionário | Gestão de Funcionários'
 })

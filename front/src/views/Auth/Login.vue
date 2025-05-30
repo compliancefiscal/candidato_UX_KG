@@ -2,7 +2,6 @@
 import { onMounted } from 'vue'
 import LoginForm from '../../components/auth/LoginForm.vue'
 
-// Change page title
 onMounted(() => {
   document.title = 'Login | Gestão de Funcionários'
 })

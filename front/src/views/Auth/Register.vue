@@ -2,7 +2,6 @@
 import { onMounted } from 'vue'
 import RegisterForm from '../../components/auth/RegisterForm.vue'
 
-// Change page title
 onMounted(() => {
   document.title = 'Cadastro | Gestão de Funcionários'
 })
