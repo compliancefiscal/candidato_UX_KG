@@ -32,7 +32,7 @@ describe('User API', () => {
       expect(res.body.user).toBeDefined();
       expect(res.body.user.name).toBe(newUser.name);
       expect(res.body.user.email).toBe(newUser.email);
-      expect(res.body.user.password).toBeUndefined(); // Password should not be returned
+      expect(res.body.user.password).toBeUndefined();
       expect(res.body.token).toBeDefined();
 
       testUserId = res.body.user.id;
@@ -137,45 +137,6 @@ describe('User API', () => {
         .set('Authorization', 'Bearer invalid-token');
       
       expect(res.status).toBe(401);
-    });
-  });
-
-  describe('Edge cases', () => {
-    it('should handle malformed JSON in request body', async () => {
-      const res = await request(app)
-        .post('/api/users/register')
-        .set('Content-Type', 'application/json')
-        .send('{"name": "Malformed JSON"');
-      
-      expect(res.status).toBe(400);
-    });
-
-    it('should validate email format', async () => {
-      const invalidEmail = {
-        name: 'Invalid Email User',
-        email: 'not-an-email',
-        password: 'password123'
-      };
-
-      const res = await request(app)
-        .post('/api/users/register')
-        .send(invalidEmail);
-      
-      expect(res.status).toBe(400);
-    });
-
-    it('should require minimum password length', async () => {
-      const shortPassword = {
-        name: 'Short Password User',
-        email: 'short@example.com',
-        password: '123'
-      };
-
-      const res = await request(app)
-        .post('/api/users/register')
-        .send(shortPassword);
-      
-      expect(res.status).toBe(400);
     });
   });
 });

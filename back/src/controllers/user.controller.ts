@@ -6,6 +6,11 @@ export class UserController {
   static async register(req: Request, res: Response, next: NextFunction) {
     try {
       const { name, email, password } = req.body;
+
+      if (!name || !email || !password) {
+        res.status(400).json({ error: 'Name, email, and password are required' });
+        return;
+      }
       
       const existingUser = await userRepo.findByEmail(email);
       if (existingUser) {
