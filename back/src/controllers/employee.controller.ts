@@ -13,7 +13,7 @@ export class EmployeeController {
       } else {
         result = await employeeRepo.findAll();
       }
-      res.json({ list: result });
+      res.json(result);
     } catch (err) { next(err); }
   }
 
