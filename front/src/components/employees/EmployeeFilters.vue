@@ -18,7 +18,6 @@ const resetFilters = () => {
   employeeStore.clearFilters()
 }
 
-// Update filter inputs if store values change
 watchEffect(() => {
   nameFilter.value = employeeStore.nameFilter
   roleFilter.value = employeeStore.roleFilter
