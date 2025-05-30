@@ -5,6 +5,7 @@ import { useEmployeeStore } from '../../stores/employees'
 import { useToast } from '../../composables/useToast'
 import EmployeeForm from '../../components/employees/EmployeeForm.vue'
 import LoadingSpinner from '../../components/ui/LoadingSpinner.vue'
+import type { Employee } from '../../types'
 
 const route = useRoute()
 const router = useRouter()
@@ -12,12 +13,15 @@ const employeeStore = useEmployeeStore()
 const toast = useToast()
 
 const employeeId = route.params.id as string
-const employee = ref(employeeStore.getEmployeeById(employeeId))
+const employee = ref<Employee | undefined>(undefined)
 const isLoading = ref(false)
 
-// Change page title
-onMounted(() => {
+onMounted(async () => {
   document.title = 'Editar Funcionário | Gestão de Funcionários'
+
+  isLoading.value = true
+  employee.value = await employeeStore.getEmployeeById(employeeId)
+  isLoading.value = false
   
   if (!employee.value) {
     toast.error('Funcionário não encontrado')
@@ -64,10 +68,9 @@ const handleCancel = () => {
       </div>
     </header>
     
-    <!-- Main content -->
     <main class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div v-if="isLoading" class="flex justify-center py-12">
-        <LoadingSpinner message="Loading employee data..." />
+        <LoadingSpinner message="Carregando dados do funcionário..." />
       </div>
       <EmployeeForm 
         v-else-if="employee"
