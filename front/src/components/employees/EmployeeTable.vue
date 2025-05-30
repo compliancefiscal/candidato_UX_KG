@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useEmployeeStore, type Employee } from '../../stores/employees'
+import { useEmployeeStore } from '../../stores/employees'
+import type { Employee } from '../../types'
 import { useToast } from '../../composables/useToast'
 
 const props = defineProps<{
@@ -32,10 +32,14 @@ const handleEdit = (id: string) => {
   router.push(`/employees/${id}/edit`)
 }
 
-const handleDelete = (id: string) => {
+const handleDelete = async (id: string) => {
   if (confirm('Tem certeza que deseja excluir este funcionário? Esta ação não pode ser desfeita.')) {
-    employeeStore.deleteEmployee(id)
-    toast.success('Funcionário excluído com sucesso!')
+    try {
+      await employeeStore.deleteEmployee(id)
+      toast.success('Funcionário excluído com sucesso!')
+    } catch (error) {
+      toast.error('Falha ao excluir funcionário. Tente novamente.')
+    }
   }
 }
 </script>
