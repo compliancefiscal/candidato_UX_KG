@@ -1,110 +1,94 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-
-export type Employee = {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  department: string;
-  hireDate: string;
-  salary: number;
-}
+import type { Employee } from '../types'
+import * as api from '../services/api'
 
 export const useEmployeeStore = defineStore('employees', () => {
-  // Mock employee data
-  const employees = ref<Employee[]>([
-    {
-      id: '1',
-      name: 'João da Silva',
-      email: 'joao.silva@examplo.com',
-      role: 'Desenvolvedor',
-      department: 'Engenharia',
-      hireDate: '2022-01-15',
-      salary: 85000
-    },
-    {
-      id: '2',
-      name: 'Maria da Silva',
-      email: 'maria.silva@examplo.com',
-      role: 'Designer',
-      department: 'Design',
-      hireDate: '2021-06-22',
-      salary: 78000
-    },
-    {
-      id: '3',
-      name: 'Roberto Firmino',
-      email: 'roberto.firmino@examplo.com',
-      role: 'Gerente',
-      department: 'Engenharia',
-      hireDate: '2020-03-10',
-      salary: 110000
-    },
-    {
-      id: '4',
-      name: 'Emilia Costa',
-      email: 'emily.costa@examplo.com',
-      role: 'Desenvolvedor',
-      department: 'Engenharia',
-      hireDate: '2022-09-05',
-      salary: 82000
-    },
-    {
-      id: '5',
-      name: 'Michel De Souza',
-      email: 'michael.souza@examplo.com',
-      role: 'Gerente de Produtos',
-      department: 'Produtos',
-      hireDate: '2021-11-18',
-      salary: 95000
-    }
-  ])
+  const employees = ref<Employee[]>([])
+  const isLoading = ref(false)
+  const error = ref<string | null>(null)
   
   const nameFilter = ref('')
   const roleFilter = ref('')
 
   const filteredEmployees = computed(() => {
+    if (!employees.value) return []
+
     return employees.value.filter(employee => {
       const nameMatch = employee.name.toLowerCase().includes(nameFilter.value.toLowerCase())
-      const roleMatch = roleFilter.value === '' || employee.role.toLowerCase() === roleFilter.value.toLowerCase()
+      const roleMatch = !roleFilter.value || employee.role.toLowerCase() === roleFilter.value.toLowerCase()
       return nameMatch && roleMatch
     })
   })
 
   const uniqueRoles = computed(() => {
+    if (!employees.value) return []
+
     const roles = new Set<string>()
     employees.value.forEach(emp => roles.add(emp.role))
     return Array.from(roles)
   })
 
-  function getEmployeeById(id: string): Employee | undefined {
-    return employees.value.find(emp => emp.id === id)
-  }
-
-  function addEmployee(employee: Omit<Employee, 'id'>): Employee {
-    const newEmployee = {
-      ...employee,
-      id: crypto.randomUUID()
+  async function fetchEmployees() {
+    isLoading.value = true
+    error.value = null
+    try {
+      employees.value = await api.fetchEmployees()
+    } catch (err) {
+      error.value = 'Falha ao buscar os funcionários'
+      throw err
+    } finally {
+      isLoading.value = false
     }
-    employees.value.push(newEmployee)
-    return newEmployee
   }
 
-  function updateEmployee(id: string, updatedEmployee: Omit<Employee, 'id'>): Employee | null {
-    const index = employees.value.findIndex(emp => emp.id === id)
-    if (index !== -1) {
-      const employee = { ...updatedEmployee, id }
-      employees.value[index] = employee
+  async function getEmployeeById(id: string): Promise<Employee | undefined> {
+    try {
+      return await api.fetchEmployeeById(id)
+    } catch (err) {
+      error.value = 'Falha ao buscar o funcionário'
+      throw err
+    }
+  }
+
+  async function addEmployee(employee: Omit<Employee, 'id'>): Promise<Employee> {
+    try {
+      const newEmployee = await api.createEmployee(employee)
+      employees.value = [...employees.value, newEmployee]
+      return newEmployee
+    } catch (err) {
+      error.value = 'Falha ao adicionar o funcionário'
+      throw err
+    }
+  }
+
+  async function updateEmployee(id: string, updatedEmployee: Omit<Employee, 'id'>): Promise<Employee | null> {
+    try {
+      const employee = await api.updateEmployee(id, updatedEmployee)
+      const index = employees.value.findIndex(emp => emp.id === id)
+      if (index !== -1) {
+        employees.value = [
+          ...employees.value.slice(0, index),
+          employee,
+          ...employees.value.slice(index + 1)
+        ]
+      }
       return employee
+    } catch (err) {
+      error.value = 'Falha ao atualizar o funcionário'
+      throw err
     }
-    return null
   }
 
-  function deleteEmployee(id: string): boolean {
-    const initialLength = employees.value.length
-    employees.value = employees.value.filter(emp => emp.id !== id)
-    return employees.value.length !== initialLength
+  async function deleteEmployee(id: string): Promise<boolean> {
+    try {
+      await api.deleteEmployee(id)
+      employees.value = employees.value.filter(emp => emp.id !== id)
+      return true
+    } catch (err) {
+      error.value = 'Falha ao excluir o funcionário'
+      throw err
+    }
   }
 
   function setNameFilter(filter: string) {
@@ -126,6 +110,9 @@ export const useEmployeeStore = defineStore('employees', () => {
     uniqueRoles,
     nameFilter,
     roleFilter,
+    isLoading,
+    error,
+    fetchEmployees,
     getEmployeeById,
     addEmployee,
     updateEmployee,
