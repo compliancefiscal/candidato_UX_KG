@@ -2,13 +2,49 @@ import { PrismaClient, Employee } from '../generated/prisma';
 const prisma = new PrismaClient();
 
 export const employeeRepo = {
-  findAll: () => prisma.employee.findMany(),
-  findById: (id: string) => prisma.employee.findUnique({ where: { id } }),
-  findByName: (name: string) => prisma.employee.findMany({ where: { name: { contains: name } } }),
-  findByNameAndRole: (name: string, role: string) =>
-    prisma.employee.findMany({ where: { name: { contains: name }, role } }),
-  create: (data: Omit<Employee, 'id'>) => prisma.employee.create({ data }),
-  update: (id: string, data: Partial<Employee>) =>
-    prisma.employee.update({ where: { id }, data }),
-  remove: (id: string) => prisma.employee.delete({ where: { id } })
+  findAll: (ownerId: string) => prisma.employee.findMany({
+    where: { ownerId }
+  }),
+
+  findById: (id: string, ownerId: string) => prisma.employee.findFirst({
+    where: {
+      id,
+      ownerId
+    }
+  }),
+
+  findByName: (name: string, ownerId: string) => prisma.employee.findMany({
+    where: {
+      name: { contains: name },
+      ownerId
+    }
+  }),
+
+  findByNameAndRole: (name: string, role: string, ownerId: string) =>
+    prisma.employee.findMany({
+      where: {
+        name: { contains: name },
+        role,
+        ownerId
+      }
+    }),
+
+  create: (data: Omit<Employee, 'id' | 'createdAt' | 'updatedAt'>) => prisma.employee.create({ data }),
+
+  update: (id: string, data: Partial<Employee>, ownerId: string) =>
+    prisma.employee.updateMany({
+      where: {
+        id,
+        ownerId
+      },
+      data 
+    }).then(() => prisma.employee.findUnique({ where: { id } })),
+
+  remove: (id: string, ownerId: string) =>
+    prisma.employee.deleteMany({
+      where: {
+        id,
+        ownerId
+      }
+    })
 };
