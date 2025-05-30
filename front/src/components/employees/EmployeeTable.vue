@@ -16,7 +16,8 @@ const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('pt-BR', {
     year: 'numeric',
     month: 'short',
-    day: 'numeric'
+    day: 'numeric',
+    timeZone: 'UTC'
   })
 }
 
@@ -69,7 +70,6 @@ const handleDelete = async (id: string) => {
         >
           <td class="table-cell font-medium text-gray-900">
             <div>{{ employee.name }}</div>
-            <div class="text-sm text-gray-500">{{ employee.email }}</div>
           </td>
           <td class="table-cell text-gray-700">{{ employee.role }}</td>
           <td class="table-cell text-gray-700">{{ formatDate(employee.contractDate) }}</td>
