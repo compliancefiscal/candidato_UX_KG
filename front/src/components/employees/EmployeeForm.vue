@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { Employee } from '../../stores/employees'
+import type { Employee } from '../../types'
 import { useToast } from '../../composables/useToast'
 import LoadingSpinner from '../ui/LoadingSpinner.vue'
 
@@ -22,7 +22,7 @@ const submitButtonText = computed(() => props.isEditing ? 'Atualizar Funcionári
 
 // Form data
 const name = ref(props.employee?.name || '')
-const email = ref(props.employee?.email || '')
+const address = ref(props.employee?.address || '')
 const role = ref(props.employee?.role || '')
 const department = ref(props.employee?.department || '')
 const hireDate = ref(props.employee?.hireDate || new Date().toISOString().split('T')[0])
@@ -31,7 +31,7 @@ const salary = ref(props.employee?.salary?.toString() || '')
 // Form validation
 const errors = ref({
   name: '',
-  email: '',
+  address: '',
   role: '',
   department: '',
   hireDate: '',
@@ -79,11 +79,8 @@ const validateForm = () => {
     isValid = false
   }
 
-  if (!email.value.trim()) {
-    errors.value.email = 'E-mail é obrigatório'
-    isValid = false
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
-    errors.value.email = 'Por favor, insira um e-mail válido'
+  if (!address.value.trim()) {
+    errors.value.address = 'Endereço é obrigatório'
     isValid = false
   }
 
@@ -121,12 +118,11 @@ const handleSubmit = () => {
 
   isLoading.value = true
   
-  // Simulate API delay
   setTimeout(() => {
     try {
       const employeeData = {
         name: name.value,
-        email: email.value,
+        address: address.value,
         role: role.value,
         department: department.value,
         hireDate: hireDate.value,
@@ -167,16 +163,16 @@ const handleCancel = () => {
         </div>
 
         <div>
-          <label for="email" class="form-label">E-mail</label>
+          <label for="address" class="form-label">Endereço</label>
           <input 
-            id="email" 
-            v-model="email" 
-            type="email" 
+            id="address" 
+            v-model="address" 
+            type="text"
             class="form-input" 
-            :class="{ 'border-red-500': errors.email }"
-            placeholder="joao.silva@exemplo.com"
+            :class="{ 'border-red-500': errors.address }"
+            placeholder="Rua Exemplo, 123"
           />
-          <p v-if="errors.email" class="form-error">{{ errors.email }}</p>
+          <p v-if="errors.address" class="form-error">{{ errors.address }}</p>
         </div>
 
         <div>
