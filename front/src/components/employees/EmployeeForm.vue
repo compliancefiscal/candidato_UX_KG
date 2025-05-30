@@ -3,6 +3,8 @@ import { ref, computed, onMounted } from 'vue'
 import type { Employee } from '../../types'
 import { useToast } from '../../composables/useToast'
 import LoadingSpinner from '../ui/LoadingSpinner.vue'
+import { useAuthStore } from '../../stores/auth'
+import { vMaska } from 'maska/vue'
 
 const props = defineProps<{
   employee?: Employee
@@ -16,42 +18,81 @@ const emit = defineEmits<{
 
 const toast = useToast()
 const isLoading = ref(false)
+const authStore = useAuthStore()
 
 const formTitle = computed(() => props.isEditing ? 'Editar Funcionário' : 'Adicionar Novo Funcionário')
 const submitButtonText = computed(() => props.isEditing ? 'Atualizar Funcionário' : 'Criar Funcionário')
 
-// Form data
+const formatPhone = (value: string): string => {
+  if (!value) return ''
+  const digits = value.replace(/\D/g, '')
+  if (digits.length <= 2) return digits
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`
+}
+
+const unformatPhone = (value: string): string => {
+  return value.replace(/\D/g, '')
+}
+
+const formatZipCode = (value: string): string => {
+  if (!value) return ''
+  const digits = value.replace(/\D/g, '')
+  if (digits.length <= 5) return digits
+  return `${digits.slice(0, 5)}-${digits.slice(5, 8)}`
+}
+
+const unformatZipCode = (value: string): string => {
+  return value.replace(/\D/g, '')
+}
+
 const name = ref(props.employee?.name || '')
 const address = ref(props.employee?.address || '')
+const neighborhood = ref(props.employee?.neighborhood || '')
+const zipCode = ref(props.employee?.zipCode || '')
+const phone = ref(props.employee?.phone || '')
 const role = ref(props.employee?.role || '')
-const department = ref(props.employee?.department || '')
-const hireDate = ref(props.employee?.hireDate || new Date().toISOString().split('T')[0])
 const salary = ref(props.employee?.salary?.toString() || '')
+const contractDate = ref(props.employee?.contractDate || new Date().toISOString().split('T')[0])
 
-// Form validation
+const formattedPhone = computed({
+  get: () => formatPhone(phone.value),
+  set: (value) => { phone.value = unformatPhone(value) }
+})
+
+const formattedZipCode = computed({
+  get: () => formatZipCode(zipCode.value),
+  set: (value) => { zipCode.value = unformatZipCode(value) }
+})
+
+const formattedSalary = computed<string>({
+  get() {
+    const cents = parseInt(salary.value, 10) || 0  
+    const value = cents / 100  
+    return new Intl.NumberFormat('pt-BR', {
+      style:    'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value)
+  },
+  set(val: string) {
+    const numeric = val.replace(/\D/g, '')  
+    salary.value = (parseInt(numeric, 10) || 0).toString()  
+  }
+})
+
 const errors = ref({
   name: '',
   address: '',
+  neighborhood: '',
+  zipCode: '',
+  phone: '',
   role: '',
-  department: '',
-  hireDate: '',
+  contractDate: '',
   salary: ''
 })
 
-// Department options
-const departments = [
-  'Engenharia',
-  'Design',
-  'Marketing',
-  'Vendas',
-  'Finanças',
-  'RH',
-  'Produto',
-  'Operações',
-  'Suporte ao Cliente',
-]
-
-// Role options
 const roles = [
   'Desenvolvedor',
   'Designer',
@@ -68,12 +109,10 @@ const roles = [
 const validateForm = () => {
   let isValid = true
   
-  // Reset errors
   Object.keys(errors.value).forEach(key => {
     errors.value[key as keyof typeof errors.value] = ''
   })
 
-  // Validate required fields
   if (!name.value.trim()) {
     errors.value.name = 'Nome é obrigatório'
     isValid = false
@@ -84,18 +123,23 @@ const validateForm = () => {
     isValid = false
   }
 
+  if (zipCode.value && !/^\d{8}$/.test(zipCode.value)) {
+    errors.value.zipCode = 'CEP deve conter 8 dígitos'
+    isValid = false
+  }
+
+  if (phone.value && !/^\d{10,11}$/.test(phone.value)) {
+    errors.value.phone = 'Telefone deve conter 10 ou 11 dígitos'
+    isValid = false
+  }
+
   if (!role.value) {
     errors.value.role = 'A função é obrigatória'
     isValid = false
   }
 
-  if (!department.value) {
-    errors.value.department = 'O departamento é obrigatório'
-    isValid = false
-  }
-
-  if (!hireDate.value) {
-    errors.value.hireDate = 'A data de contratação é obrigatória'
+  if (!contractDate.value) {
+    errors.value.contractDate = 'A data de contratação é obrigatória'
     isValid = false
   }
 
@@ -118,25 +162,30 @@ const handleSubmit = () => {
 
   isLoading.value = true
   
-  setTimeout(() => {
-    try {
-      const employeeData = {
-        name: name.value,
-        address: address.value,
-        role: role.value,
-        department: department.value,
-        hireDate: hireDate.value,
-        salary: Number(salary.value)
-      }
-      
-      emit('submit', employeeData)
-    } catch (error) {
-      toast.error('Ocorreu um erro ao salvar o funcionário')
-      console.error(error)
-    } finally {
-      isLoading.value = false
+  try {
+    if (!authStore.user) {
+      throw new Error('Usuário não autenticado')
     }
-  }, 800)
+
+    const employeeData = {
+      name: name.value,
+      address: address.value,
+      neighborhood: neighborhood.value,
+      zipCode: zipCode.value,
+      phone: phone.value,
+      role: role.value,
+      contractDate: contractDate.value,
+      salary: Number(salary.value),
+      ownerId: authStore.user.id
+    }
+    
+    emit('submit', employeeData)
+  } catch (error) {
+    toast.error('Ocorreu um erro ao salvar o funcionário')
+    console.error(error)
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const handleCancel = () => {
@@ -163,6 +212,34 @@ const handleCancel = () => {
         </div>
 
         <div>
+          <label for="phone" class="form-label">Telefone</label>
+          <input 
+            id="phone" 
+            v-model="formattedPhone" 
+            type="text" 
+            class="form-input" 
+            :class="{ 'border-red-500': errors.phone }"
+            placeholder="(11) 91234-5678"
+            v-maska="'(##) #####-####'"
+          />
+          <p v-if="errors.name" class="form-error">{{ errors.name }}</p>
+        </div>
+
+        <div>
+          <label for="zipCode" class="form-label">CEP</label>
+          <input 
+            id="zipCode" 
+            v-model="formattedZipCode" 
+            type="text"
+            class="form-input" 
+            :class="{ 'border-red-500': errors.zipCode }"
+            placeholder="00000-000"
+            v-maska="'#####-###'"
+          />
+          <p v-if="errors.zipCode" class="form-error">{{ errors.zipCode }}</p>
+        </div>
+
+        <div>
           <label for="address" class="form-label">Endereço</label>
           <input 
             id="address" 
@@ -173,6 +250,19 @@ const handleCancel = () => {
             placeholder="Rua Exemplo, 123"
           />
           <p v-if="errors.address" class="form-error">{{ errors.address }}</p>
+        </div>
+
+        <div>
+          <label for="neighborhood" class="form-label">Bairro</label>
+          <input 
+            id="neighborhood" 
+            v-model="neighborhood" 
+            type="text"
+            class="form-input" 
+            :class="{ 'border-red-500': errors.neighborhood }"
+            placeholder="Vila Virgínia"
+          />
+          <p v-if="errors.neighborhood" class="form-error">{{ errors.neighborhood }}</p>
         </div>
 
         <div>
@@ -190,42 +280,26 @@ const handleCancel = () => {
         </div>
 
         <div>
-          <label for="department" class="form-label">Departmento</label>
-          <select 
-            id="department" 
-            v-model="department" 
-            class="form-input" 
-            :class="{ 'border-red-500': errors.department }"
-          >
-            <option value="" disabled>Selecione um departmento</option>
-            <option v-for="d in departments" :key="d" :value="d">{{ d }}</option>
-          </select>
-          <p v-if="errors.department" class="form-error">{{ errors.department }}</p>
-        </div>
-
-        <div>
-          <label for="hireDate" class="form-label">Data de Contratação</label>
+          <label for="contractDate" class="form-label">Data de Contratação</label>
           <input 
-            id="hireDate" 
-            v-model="hireDate" 
+            id="contractDate" 
+            v-model="contractDate" 
             type="date" 
             class="form-input" 
-            :class="{ 'border-red-500': errors.hireDate }"
+            :class="{ 'border-red-500': errors.contractDate }"
           />
-          <p v-if="errors.hireDate" class="form-error">{{ errors.hireDate }}</p>
+          <p v-if="errors.contractDate" class="form-error">{{ errors.contractDate }}</p>
         </div>
 
         <div>
           <label for="salary" class="form-label">Salário</label>
           <input 
             id="salary" 
-            v-model="salary" 
-            type="number" 
+            v-model="formattedSalary" 
+            type="text" 
             class="form-input" 
             :class="{ 'border-red-500': errors.salary }"
-            placeholder="80000"
-            min="0"
-            step="1000"
+            placeholder="R$ 0,00"
           />
           <p v-if="errors.salary" class="form-error">{{ errors.salary }}</p>
         </div>
