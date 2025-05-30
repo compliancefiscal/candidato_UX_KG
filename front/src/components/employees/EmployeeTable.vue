@@ -51,7 +51,6 @@ const handleDelete = async (id: string) => {
         <tr>
           <th class="table-header">Nome</th>
           <th class="table-header">Função</th>
-          <th class="table-header">Departamento</th>
           <th class="table-header">Data de Contratação</th>
           <th class="table-header">Salário</th>
           <th class="table-header">Ações</th>
@@ -73,8 +72,7 @@ const handleDelete = async (id: string) => {
             <div class="text-sm text-gray-500">{{ employee.email }}</div>
           </td>
           <td class="table-cell text-gray-700">{{ employee.role }}</td>
-          <td class="table-cell text-gray-700">{{ employee.department }}</td>
-          <td class="table-cell text-gray-700">{{ formatDate(employee.hireDate) }}</td>
+          <td class="table-cell text-gray-700">{{ formatDate(employee.contractDate) }}</td>
           <td class="table-cell text-gray-700">{{ formatCurrency(employee.salary) }}</td>
           <td class="table-cell text-right text-sm font-medium space-x-2">
             <button 
