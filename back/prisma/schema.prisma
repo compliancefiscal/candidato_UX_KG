@@ -14,16 +14,32 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id        String      @id @default(uuid())
+  name      String
+  email     String      @unique
+  password  String
+  employees Employee[]
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
 model Employee {
   id            String      @id @default(uuid())
   name          String
   address       String
   neighborhood  String?
-  zipCode       String? @map("zip_code")
+  zipCode       String?     @map("zip_code")
   phone         String?
-  salary        Decimal @db.Decimal(10, 2)
-  contractDate  DateTime @map("contract_date")
+  salary        Decimal     @db.Decimal(10, 2)
+  contractDate  DateTime    @map("contract_date")
   role          String
+  owner         User        @relation(fields: [ownerId], references: [id])
+  ownerId       String      @map("owner_id")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
 
   @@map("employees")
 }
