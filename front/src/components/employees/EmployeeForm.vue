@@ -53,7 +53,7 @@ const zipCode = ref(props.employee?.zipCode || '')
 const phone = ref(props.employee?.phone || '')
 const role = ref(props.employee?.role || '')
 const salary = ref(props.employee?.salary?.toString() || '')
-const contractDate = ref(props.employee?.contractDate || new Date().toISOString().split('T')[0])
+const contractDate = ref(props.employee?.contractDate.split('T')[0] || new Date().toISOString().split('T')[0])
 
 const formattedPhone = computed({
   get: () => formatPhone(phone.value),
@@ -174,7 +174,7 @@ const handleSubmit = () => {
       zipCode: zipCode.value,
       phone: phone.value,
       role: role.value,
-      contractDate: contractDate.value,
+      contractDate: new Date(contractDate.value).toISOString(),
       salary: Number(salary.value),
       ownerId: authStore.user.id
     }
@@ -283,7 +283,7 @@ const handleCancel = () => {
           <label for="contractDate" class="form-label">Data de Contratação</label>
           <input 
             id="contractDate" 
-            v-model="contractDate" 
+            v-model="contractDate"
             type="date" 
             class="form-input" 
             :class="{ 'border-red-500': errors.contractDate }"
